@@ -33,3 +33,10 @@ class MisCargasTest(TestCase):
         resp = self.client.post(f"/encuestas/{fam.pk}/borrar/")
         self.assertEqual(resp.status_code, 404)
         self.assertTrue(Familia.objects.filter(pk=fam.pk).exists())
+
+    def test_cannot_edit_others(self):
+        fam = self._fam(self.beto)
+        self.client.login(username="ana", password="x")
+        self.assertEqual(self.client.get(f"/encuestas/{fam.pk}/editar/").status_code, 404)
+        self.assertEqual(self.client.post(f"/encuestas/{fam.pk}/editar/", data={}).status_code, 404)
+        self.assertTrue(Familia.objects.filter(pk=fam.pk).exists())
