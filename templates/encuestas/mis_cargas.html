@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Cargas{% endblock %}
+
+{% block content %}
+<h1>Mis cargas</h1>
+{% if familias %}
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Parcela</th>
+            <th>Intención de voto</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fam in familias %}
+        <tr>
+            <td>{{ fam.nombre_familia }}</td>
+            <td>{{ fam.parcela.numero }}</td>
+            <td>{{ fam.voto.intencion }}</td>
+            <td>{{ fam.fecha|date:"d/m/Y H:i" }}</td>
+            <td>
+                <a href="{% url 'editar_familia' fam.pk %}">Editar</a>
+                <form method="post" action="{% url 'borrar_familia' fam.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" onclick="return confirm('¿Eliminar esta familia?')">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Todavía no cargaste ninguna familia.</p>
+{% endif %}
+<p><a href="{% url 'cargar_familia' %}">Cargar nueva familia</a></p>
+{% endblock %}
