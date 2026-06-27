@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Encuestadores{% endblock %}
+
+{% block content %}
+<h1>Gestión de Encuestadores</h1>
+
+<section>
+  <h2>Crear Encuestador</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Crear</button>
+  </form>
+</section>
+
+<section>
+  <h2>Encuestadores Registrados</h2>
+  {% if encuestadores %}
+  <ul>
+    {% for perfil in encuestadores %}
+    <li>
+      {{ perfil.user.username }}
+      {% with parcelas=perfil.parcelas.all %}
+      {% if parcelas %}
+      — Parcelas: {% for p in parcelas %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      {% else %}
+      — Sin parcelas asignadas
+      {% endif %}
+      {% endwith %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No hay encuestadores registrados.</p>
+  {% endif %}
+</section>
+{% endblock %}
