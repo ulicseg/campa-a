@@ -1,0 +1,31 @@
+<h2>Cuadra {{ parcela.numero }}</h2>
+{% if familias %}
+<table>
+  <thead>
+    <tr>
+      <th>Nombre familia</th>
+      <th>N.° familia</th>
+      <th>Integrantes</th>
+      <th>Contacto 1</th>
+      <th>Contacto 2</th>
+      <th>Intención de voto</th>
+      <th>Cargado por</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for familia in familias %}
+    <tr>
+      <td>{{ familia.nombre_familia }}</td>
+      <td>{{ familia.numero_familia }}</td>
+      <td>{{ familia.integrantes }}</td>
+      <td>{{ familia.contacto_1 }}</td>
+      <td>{{ familia.contacto_2 }}</td>
+      <td>{% if familia.voto %}{{ familia.voto.get_intencion_display }}{% else %}—{% endif %}</td>
+      <td>{{ familia.cargada_por.username }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Sin familias relevadas en esta cuadra.</p>
+{% endif %}

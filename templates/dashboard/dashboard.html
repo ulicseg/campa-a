@@ -15,4 +15,11 @@
   </svg>
 </div>
 <div id="detalle"></div>
+<script>
+document.querySelectorAll('polygon[data-numero]').forEach(el =>
+  el.addEventListener('click', async () => {
+    const r = await fetch(`/dashboard/parcela/${el.dataset.numero}/detalle/`);
+    document.getElementById('detalle').innerHTML = await r.text();
+  }));
+</script>
 {% endblock %}
