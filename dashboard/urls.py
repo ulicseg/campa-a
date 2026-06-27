@@ -1,10 +1,6 @@
 from django.urls import path
-from django.views.generic import TemplateView
+from dashboard import views
 
 urlpatterns = [
-    path(
-        "",
-        TemplateView.as_view(template_name="base.html"),
-        name="dashboard",
-    ),
+    path("", views.Dashboard.as_view(), name="dashboard"),
 ]
