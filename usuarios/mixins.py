@@ -1,6 +1,8 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 
+from usuarios.models import PerfilUsuario
+
 
 class _RolMixin(LoginRequiredMixin):
     rol_requerido = None
@@ -15,8 +17,8 @@ class _RolMixin(LoginRequiredMixin):
 
 
 class JefeRequiredMixin(_RolMixin):
-    rol_requerido = "jefe"
+    rol_requerido = PerfilUsuario.ROL_JEFE
 
 
 class EncuestadorRequiredMixin(_RolMixin):
-    rol_requerido = "encuestador"
+    rol_requerido = PerfilUsuario.ROL_ENCUESTADOR
