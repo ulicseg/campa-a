@@ -1,12 +1,106 @@
 {% extends "base.html" %}
 
-{% block title %}Cargar Familia{% endblock %}
+{% block title %}{% if editar %}Editar relevamiento{% else %}Cargar relevamiento{% endif %}{% endblock %}
+
+{% block head %}
+<style>
+  .form-wrap { display: flex; justify-content: center; align-items: flex-start; flex: 1; min-height: 0; padding: 0.5rem 0; overflow-y: auto; }
+  .form-card { width: 100%; max-width: 620px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem 1rem; }
+  .span-2 { grid-column: 1 / -1; }
+  .field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .field label { font-size: 0.8rem; font-weight: 600; color: var(--gray-800); }
+  .field-err { font-size: 0.74rem; color: var(--danger); }
+
+  .consent {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    background: var(--primary-light);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    margin-top: 0.25rem;
+  }
+  .consent input[type=checkbox] { margin-top: 0.15rem; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent-dark); }
+  .consent label { font-size: 0.82rem; font-weight: 500; color: var(--gray-800); line-height: 1.4; cursor: pointer; }
+  .consent.has-error { border-color: var(--danger); background: #fef2f2; }
+
+  .form-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--gray-200); }
+</style>
+{% endblock %}
 
 {% block content %}
-<h1>Cargar Familia</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Guardar</button>
-</form>
+<div class="form-wrap">
+  <div class="card form-card">
+    <div style="border-bottom: 1px solid var(--gray-200); padding-bottom: 0.75rem; margin-bottom: 1.1rem;">
+      <h1 style="font-size: 1.15rem; font-weight: 700; color: var(--primary);">{% if editar %}Editar ficha de hogar{% else %}Cargar ficha de hogar{% endif %}</h1>
+      <p style="color: var(--gray-500); font-size: 0.82rem;">Registre la información recopilada en el relevamiento territorial.</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="field-err" style="margin-bottom: 0.85rem;">{{ form.non_field_errors|join:" " }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="{{ form.nombre_familia.id_for_label }}">Apellido / nombre de la familia</label>
+          {{ form.nombre_familia }}
+          {% if form.nombre_familia.errors %}<span class="field-err">{{ form.nombre_familia.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.numero_familia.id_for_label }}">N.° de familia</label>
+          {{ form.numero_familia }}
+          {% if form.numero_familia.errors %}<span class="field-err">{{ form.numero_familia.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.integrantes.id_for_label }}">Integrantes</label>
+          {{ form.integrantes }}
+          {% if form.integrantes.errors %}<span class="field-err">{{ form.integrantes.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.parcela.id_for_label }}">Cuadra / parcela</label>
+          {{ form.parcela }}
+          {% if form.parcela.errors %}<span class="field-err">{{ form.parcela.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.intencion.id_for_label }}">Intención de voto</label>
+          {{ form.intencion }}
+          {% if form.intencion.errors %}<span class="field-err">{{ form.intencion.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.contacto_1.id_for_label }}">Contacto 1 <span style="font-weight:400;color:var(--gray-500)">(opcional)</span></label>
+          {{ form.contacto_1 }}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.contacto_2.id_for_label }}">Contacto 2 <span style="font-weight:400;color:var(--gray-500)">(opcional)</span></label>
+          {{ form.contacto_2 }}
+        </div>
+
+        <div class="consent {% if form.consentimiento_informado.errors %}has-error{% endif %}">
+          {{ form.consentimiento_informado }}
+          <label for="{{ form.consentimiento_informado.id_for_label }}">{{ form.consentimiento_informado.label }}</label>
+        </div>
+        {% if form.consentimiento_informado.errors %}
+          <span class="field-err span-2">Debe confirmar el consentimiento para poder guardar el registro.</span>
+        {% endif %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" style="flex: 1;">{% if editar %}Guardar cambios{% else %}Guardar registro{% endif %}</button>
+        <a href="{% url 'mis_cargas' %}" class="btn btn-secondary" style="flex: 1;">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}

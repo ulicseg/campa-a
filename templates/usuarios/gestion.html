@@ -2,37 +2,229 @@
 
 {% block title %}Gestión de Encuestadores{% endblock %}
 
+{% block head %}
+<style>
+  .gestion-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    padding-bottom: 0.6rem;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+
+  .gestion-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .gestion-grid {
+      grid-template-columns: minmax(360px, 0.9fr) 1.1fr;
+      min-height: 0;
+    }
+  }
+
+  .gestion-grid > .card { margin-bottom: 0; min-height: 0; }
+
+  .form-row { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-row + .form-row { margin-top: 0.9rem; }
+
+  /* Parcela chip grid — replaces the vertical checkbox list */
+  .parcela-field { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.9rem; }
+
+  .parcela-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .parcela-toolbar .hint { font-size: 0.72rem; color: var(--gray-500); }
+
+  .chip-actions { display: flex; gap: 0.5rem; }
+
+  .chip-actions button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-dark);
+    cursor: pointer;
+  }
+  .chip-actions button:hover { text-decoration: underline; }
+
+  .parcela-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 0.35rem;
+    overflow-y: auto;
+    padding: 0.6rem;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+    max-height: 170px;
+  }
+
+  /* Hide Django's default list chrome; style each label as a chip */
+  .parcela-grid ul { list-style: none; display: contents; }
+
+  .parcela-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+  }
+
+  .parcela-chip:hover { border-color: var(--accent); color: var(--accent-dark); }
+
+  .parcela-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+  .parcela-chip:has(input:checked) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+  }
+
+  .parcela-error { font-size: 0.78rem; color: var(--danger); }
+
+  .flash { padding: 0.6rem 0.9rem; border-radius: var(--radius); font-size: 0.82rem; margin-bottom: 0.85rem; border: 1px solid; flex-shrink: 0; }
+  .flash.success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+  .flash.error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+
+  .btn-delete { background: none; border: none; color: var(--danger); font-size: 0.78rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 5px; }
+  .btn-delete:hover { background: #fef2f2; }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>Gestión de Encuestadores</h1>
+<div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+  <div class="gestion-head">
+    <div>
+      <h1 style="font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 0.15rem;">Gestión de encuestadores</h1>
+      <p style="color: var(--gray-500); font-size: 0.82rem;">Cree cuentas operativas y asígneles las cuadras donde relevarán.</p>
+    </div>
+  </div>
 
-<section>
-  <h2>Crear Encuestador</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Crear</button>
-  </form>
-</section>
-
-<section>
-  <h2>Encuestadores Registrados</h2>
-  {% if encuestadores %}
-  <ul>
-    {% for perfil in encuestadores %}
-    <li>
-      {{ perfil.user.username }}
-      {% with parcelas=perfil.parcelas.all %}
-      {% if parcelas %}
-      — Parcelas: {% for p in parcelas %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}
-      {% else %}
-      — Sin parcelas asignadas
-      {% endif %}
-      {% endwith %}
-    </li>
+  {% if messages %}
+    {% for message in messages %}
+      <div class="flash {{ message.tags }}">{{ message }}</div>
     {% endfor %}
-  </ul>
-  {% else %}
-  <p>No hay encuestadores registrados.</p>
   {% endif %}
-</section>
+
+  <div class="gestion-grid">
+    <!-- Create form -->
+    <div class="card" style="display: flex; flex-direction: column;">
+      <h2 class="section-title">Registrar nuevo encuestador</h2>
+      <form method="post" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+        {% csrf_token %}
+
+        <div class="form-row">
+          <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="parcela-error">{{ form.username.errors|join:" " }}</div>{% endif %}
+        </div>
+
+        <div class="form-row">
+          <label for="{{ form.password.id_for_label }}">Contraseña inicial</label>
+          {{ form.password }}
+          {% if form.password.errors %}<div class="parcela-error">{{ form.password.errors|join:" " }}</div>{% else %}
+          <span style="font-size: 0.72rem; color: var(--gray-500);">Mínimo 8 caracteres. El encuestador podrá cambiarla luego.</span>{% endif %}
+        </div>
+
+        <div class="parcela-field">
+          <div class="parcela-toolbar">
+            <label style="margin:0;">Parcelas asignadas</label>
+            <div class="chip-actions">
+              <button type="button" data-grid-action="all">Seleccionar todas</button>
+              <button type="button" data-grid-action="none">Limpiar</button>
+            </div>
+          </div>
+          <div class="parcela-grid" id="parcela-grid">
+            {% for chip in form.parcelas %}
+              <label class="parcela-chip" title="Cuadra {{ chip.choice_label }}">
+                {{ chip.tag }}
+                <span>{{ chip.choice_label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          {% if form.parcelas.errors %}<div class="parcela-error">{{ form.parcelas.errors|join:" " }}</div>{% endif %}
+        </div>
+
+        <button type="submit" style="width: 100%; margin-top: 1rem; flex-shrink: 0;">Crear cuenta</button>
+      </form>
+    </div>
+
+    <!-- Registered list -->
+    <div class="card" style="display: flex; flex-direction: column;">
+      <h2 class="section-title">Encuestadores activos</h2>
+      {% if encuestadores %}
+      <div class="table-container" style="flex: 1; overflow-y: auto; min-height: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Cuadras asignadas</th>
+              <th style="text-align: right;">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for perfil in encuestadores %}
+            <tr>
+              <td style="font-weight: 600;">{{ perfil.user.username }}</td>
+              <td>
+                {% with parcelas=perfil.parcelas.all %}
+                {% if parcelas %}
+                  <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                    {% for p in parcelas %}<span class="badge num">{{ p.numero }}</span>{% endfor %}
+                  </div>
+                {% else %}
+                  <span style="color: var(--danger); font-size: 0.8rem;">Sin cuadras asignadas</span>
+                {% endif %}
+                {% endwith %}
+              </td>
+              <td style="text-align: right;">
+                <form method="post" action="{% url 'borrar_encuestador' perfil.user_id %}" style="margin: 0;"
+                      onsubmit="return confirm('¿Eliminar al encuestador {{ perfil.user.username }}? Esta acción no se puede deshacer.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-delete">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--gray-500); padding: 3rem 1rem;">
+        <p style="font-size: 0.85rem;">Todavía no hay encuestadores. Cree el primero con el formulario de la izquierda.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('[data-grid-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const check = btn.dataset.gridAction === 'all';
+      document.querySelectorAll('#parcela-grid input[type=checkbox]').forEach(c => { c.checked = check; });
+    });
+  });
+</script>
 {% endblock %}

@@ -4,340 +4,264 @@
 {% block title %}Dashboard Electoral{% endblock %}
 
 {% block head %}
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 2rem;
-      align-items: start;
-    }
-    
-    @media (min-width: 1024px) {
-      .dashboard-grid {
-        grid-template-columns: 1.3fr 0.7fr;
-      }
-    }
+    .dash { display: flex; flex-direction: column; gap: 0.8rem; flex: 1; min-height: 0; }
+    .dash-head { flex-shrink: 0; }
 
-    .map-card {
-      position: relative;
+    /* ---- KPI strip ---- */
+    .kpi-strip {
+      display: flex; align-items: stretch;
+      background: #ffffff; border: 1px solid var(--gray-200);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm);
+      flex-shrink: 0; overflow: hidden;
     }
+    .metric { flex: 1; padding: 0.5rem 1.1rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.05rem; border-left: 1px solid var(--gray-200); }
+    .metric:first-child { border-left: none; }
+    .m-val { font-size: 1.45rem; font-weight: 700; color: var(--primary); line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .m-val small { font-size: 0.85rem; font-weight: 500; color: var(--gray-500); }
+    .m-lab { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-500); font-weight: 600; }
 
-    .map-container {
-      position: relative;
-      width: 100%;
+    /* ---- Body: map (left) + side column (right) ---- */
+    .dash-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; gap: 0.8rem; }
+    @media (min-width: 1024px) { .dash-body { grid-template-columns: 1.3fr 1fr; } }
+
+    .map-card { padding: 0.9rem 1rem; display: flex; flex-direction: column; min-height: 0; }
+    .map-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #faf6f1; border: 1px solid #faf6f1; border-radius: var(--radius); padding: 0.4rem; }
+    .map-frame { position: relative; aspect-ratio: 1280 / 854; max-width: 100%; max-height: 100%; }
+    .map-frame img { width: 100%; height: 100%; display: block; border-radius: 4px; }
+    .map-frame svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    svg polygon { mix-blend-mode: multiply; transition: fill-opacity 0.15s ease, stroke 0.15s ease; stroke: rgba(15,27,45,0.35); stroke-width: 0.6px; }
+    svg polygon:hover { stroke: var(--accent); stroke-width: 2px; fill-opacity: 0.85 !important; }
+    svg polygon.selected { stroke: var(--accent-dark); stroke-width: 3px; fill-opacity: 0.92 !important; }
+
+    .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--gray-200); font-size: 0.75rem; color: var(--gray-600); flex-shrink: 0; }
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+    .legend-swatch { width: 11px; height: 11px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); }
+
+    .dash-side { display: flex; flex-direction: column; gap: 0.8rem; min-height: 0; }
+
+    .chart-card { padding: 0.85rem 1rem; flex-shrink: 0; }
+    .chart-body { display: flex; align-items: center; gap: 1.25rem; }
+    .chart-canvas-wrap { position: relative; width: 120px; flex-shrink: 0; }
+    #dist-legend { flex: 1; display: flex; flex-direction: column; gap: 0.28rem; font-size: 0.8rem; }
+
+    .detail-card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0.9rem 1rem; }
+    #detalle { flex: 1; overflow: auto; min-height: 0; }
+    #detalle table th, #detalle table td { text-align: center; vertical-align: middle; }
+
+    .placeholder { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--gray-500); gap: 0.4rem; padding: 1.5rem; }
+    .placeholder svg { color: var(--gray-300); }
+
+    /* ---- Legal warning modal ---- */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(11, 31, 63, 0.55);
+      display: none; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: #ffffff; border-radius: var(--radius);
+      max-width: 520px; width: 100%;
+      box-shadow: 0 20px 50px -10px rgba(11,31,63,0.4);
       overflow: hidden;
-      border-radius: 8px;
-      border: 1px solid var(--gray-200);
-      background-color: var(--gray-100);
-      box-shadow: var(--shadow-sm);
+      border-top: 4px solid var(--danger);
     }
-
-    .map-container img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    svg polygon {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      stroke: rgba(0, 0, 0, 0.4);
-      stroke-width: 0.75px;
-    }
-
-    svg polygon:hover {
-      stroke: var(--primary);
-      stroke-width: 3px;
-      fill-opacity: 0.85 !important;
-      filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.2));
-    }
-
-    svg polygon.selected {
-      stroke: var(--accent);
-      stroke-width: 4px;
-      fill-opacity: 0.9 !important;
-    }
-
-    /* KPIs Styling */
-    .kpi-container {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .kpi-card {
-      background: #ffffff;
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius);
-      padding: 1.25rem 1rem;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .kpi-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .kpi-card .label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--gray-600);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .kpi-card .value {
-      font-size: 1.75rem;
-      font-weight: 800;
-      color: var(--gray-900);
-      margin-top: 0.5rem;
-    }
-
-    /* Details Panel */
-    .detail-card {
-      min-height: 250px;
-    }
-
-    .placeholder-detail {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 3rem 1.5rem;
-      color: var(--gray-600);
-    }
-
-    .placeholder-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    /* Legend */
-    .legend-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background-color: var(--gray-100);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .legend-color {
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-      border: 1px solid rgba(0,0,0,0.25);
-    }
-
-    .section-title {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--gray-100);
-      padding-bottom: 0.5rem;
+    .modal-body { padding: 1.5rem 1.6rem 1.25rem; }
+    .modal-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.9rem; }
+    .modal-head .warn-ico { color: var(--danger); flex-shrink: 0; }
+    .modal-head h2 { font-size: 1.05rem; font-weight: 700; color: var(--danger); text-transform: uppercase; letter-spacing: 0.03em; }
+    .modal-text { font-size: 0.9rem; line-height: 1.55; color: var(--gray-800); }
+    .modal-text strong { color: var(--danger); }
+    .modal-foot {
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+      padding: 1rem 1.6rem; background: var(--gray-50); border-top: 1px solid var(--gray-200);
     }
   </style>
 {% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 0.5rem;">Panel de Control y Mapa de Calor</h1>
-<p style="color: var(--gray-600); margin-bottom: 2rem;">Haga clic en cualquier parcela del mapa para ver los detalles de los hogares relevados.</p>
-
-<div class="dashboard-grid">
-  <!-- Left Side: Map and Details -->
-  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-    <!-- Map Card -->
-    <div class="card map-card">
-      <h2 class="section-title">Mapa Territorial</h2>
-      <div class="map-container">
-        <img src="{% static 'img/mapa_unidas.jpeg' %}" alt="Mapa Colonias Unidas">
-        <svg viewBox="0 0 1280 854" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%">
-          {% for item in parcelas_resumen %}
-          <polygon points="{{ item.parcela.svg_points }}"
-            data-numero="{{ item.parcela.numero }}"
-            fill="{% if item.resumen.color %}{{ item.resumen.color }}{% else %}transparent{% endif %}"
-            fill-opacity="{% if item.resumen.color %}{{ item.resumen.opacidad }}{% else %}0{% endif %}"
-            style="cursor:pointer">
-            <title>Parcela {{ item.parcela.numero }} - Total Votos: {{ item.resumen.total }}{% if item.resumen.mayoria %} (Mayoría: {{ item.resumen.mayoria }}){% endif %}</title>
-          </polygon>
-          {% endfor %}
-        </svg>
-      </div>
-
-      <!-- Legend -->
-      <div class="legend-container">
-        <span style="font-weight: 700; margin-right: 0.5rem; color: var(--gray-800);">Referencias:</span>
-        {% for party, color in colores.items %}
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: {{ color }};"></span>
-          <span>{{ party }}</span>
-        </div>
-        {% endfor %}
-        <div class="legend-item" style="margin-left: auto;">
-          <span style="font-size: 0.75rem; color: var(--gray-600);">* La opacidad refleja el % de dominancia.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detail Card -->
-    <div class="card detail-card" id="detalle-card-container">
-      <h2 class="section-title">Detalle Nominal por Parcela</h2>
-      <div id="detalle">
-        <div class="placeholder-detail">
-          <div class="placeholder-icon">📍</div>
-          <h3>Ninguna parcela seleccionada</h3>
-          <p style="margin-top: 0.5rem;">Haga clic en una cuadra o parcela del mapa para cargar la información detallada de los vecinos.</p>
-        </div>
-      </div>
-    </div>
+<div class="dash">
+  <div class="dash-head">
+    <h1 style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">Mapa de calor electoral — Colonias Unidas</h1>
   </div>
 
-  <!-- Right Side: KPIs and Chart -->
-  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-    <!-- KPIs Widget -->
-    <div>
-      <h2 class="section-title">Indicadores Clave</h2>
-      <div class="kpi-container">
-        <div class="kpi-card">
-          <span class="label">Total Encuestas</span>
-          <span class="value">{{ kpis.total_familias }}</span>
+  <div class="kpi-strip">
+    <div class="metric"><span class="m-val">{{ kpis.total_familias }}</span><span class="m-lab">Encuestas cargadas</span></div>
+    <div class="metric"><span class="m-val">{{ kpis.total_personas }}</span><span class="m-lab">Personas registradas</span></div>
+    <div class="metric"><span class="m-val">{{ kpis.parcelas_relevadas }}<small> / {{ kpis.total_parcelas }}</small></span><span class="m-lab">Cuadras relevadas</span></div>
+    <div class="metric"><span class="m-val">{{ kpis.cuadras_indecisas }}</span><span class="m-lab">Cuadras indecisas</span></div>
+  </div>
+
+  <div class="dash-body">
+    <!-- Map -->
+    <div class="card map-card">
+      <h2 class="section-title">Mapa territorial</h2>
+      <div class="map-stage">
+        <div class="map-frame">
+          <img src="{% static 'img/mapa_unidas.jpeg' %}" alt="Mapa de Colonias Unidas">
+          <svg viewBox="0 0 1280 854" style="position:absolute;inset:0;width:100%;height:100%">
+            {% for item in parcelas_resumen %}
+            <polygon points="{{ item.parcela.svg_points }}"
+              data-numero="{{ item.parcela.numero }}"
+              fill="{% if item.resumen.color %}{{ item.resumen.color }}{% else %}transparent{% endif %}"
+              fill-opacity="{% if item.resumen.color %}{{ item.resumen.opacidad }}{% else %}0{% endif %}"
+              style="cursor:pointer">
+              <title>Cuadra {{ item.parcela.numero }} — {{ item.resumen.total }} encuesta{{ item.resumen.total|pluralize }}{% if item.resumen.mayoria %} · mayoría {{ item.resumen.mayoria }}{% endif %}</title>
+            </polygon>
+            {% endfor %}
+          </svg>
         </div>
-        <div class="kpi-card">
-          <span class="label">Personas Registradas</span>
-          <span class="value">{{ kpis.total_personas }}</span>
-        </div>
-        <div class="kpi-card">
-          <span class="label">Cuadras Cubiertas</span>
-          <span class="value">{{ kpis.parcelas_relevadas }} <span style="font-size: 1rem; font-weight: 500; color: var(--gray-600);">/ {{ kpis.total_parcelas }}</span></span>
-        </div>
-        <div class="kpi-card">
-          <span class="label">Cuadras Indecisas</span>
-          <span class="value">{{ kpis.cuadras_indecisas }}</span>
-        </div>
+      </div>
+      <div class="legend">
+        <span style="font-weight: 600; color: var(--gray-800);">Referencias</span>
+        {% for party, color in colores.items %}
+        <div class="legend-item"><span class="legend-swatch" style="background-color: {{ color }};"></span><span>{{ party }}</span></div>
+        {% endfor %}
+        <span style="margin-left: auto; font-size: 0.72rem; color: var(--gray-500);">La opacidad indica el grado de dominancia.</span>
       </div>
     </div>
 
-    <!-- Chart Card -->
-    <div class="card">
-      <h2 class="section-title">Distribución de Intenciones</h2>
-      <div style="position: relative; height: 260px; display: flex; justify-content: center; align-items: center;">
-        <canvas id="chart-distribucion"></canvas>
+    <!-- Side column: chart + detail -->
+    <div class="dash-side">
+      <div class="card chart-card">
+        <h2 class="section-title">Distribución de intención</h2>
+        <div class="chart-body">
+          <div class="chart-canvas-wrap"><canvas id="chart-distribucion"></canvas></div>
+          <div id="dist-legend"></div>
+        </div>
+      </div>
+
+      <div class="card detail-card" id="detalle-card">
+        <h2 class="section-title">Detalle nominal por cuadra</h2>
+        <div id="detalle">
+          <div class="placeholder">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/>
+              <circle cx="12" cy="10" r="2.5"/>
+            </svg>
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--gray-600);">Ninguna cuadra seleccionada</h3>
+            <p style="font-size: 0.84rem; max-width: 320px;">Haga clic en una cuadra del mapa para ver las familias relevadas, sus contactos e intención de voto.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Raw data for Chart.js -->
+<!-- Legal warning modal (Ley 25.326) -->
+<div class="modal-backdrop" id="legal-modal" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
+  <div class="modal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <svg class="warn-ico" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <h2 id="legal-modal-title">Atención</h2>
+      </div>
+      <p class="modal-text">
+        Está a punto de acceder a <strong>datos personales y sensibles</strong> protegidos por la
+        Ley 25.326 de Protección de los Datos Personales. La difusión, filtración o mal uso de esta
+        información es de su <strong>exclusiva responsabilidad legal y ética</strong>. ¿Desea continuar?
+      </p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-secondary" id="legal-cancel">Cancelar</button>
+      <button type="button" class="btn" id="legal-accept">Comprendo y acepto</button>
+    </div>
+  </div>
+</div>
+
+<form id="csrf-form" style="display:none">{% csrf_token %}</form>
+{{ advertencia_aceptada|json_script:"advertencia-aceptada" }}
+
 {{ kpis.distribucion|json_script:"dist-data" }}
 
 <script>
-  // Setup Chart.js
   const distData = JSON.parse(document.getElementById('dist-data').textContent);
-  const chartColores = {
-    "PJ": "#1f4e9c",
-    "UCR": "#c62828",
-    "Otro": "#2e7d32",
-    "Indeciso": "#757575",
-    "No contesta": "#e0e0e0"
-  };
-
+  const chartColores = { "PJ": "#1f4e9c", "UCR": "#c62828", "Otro": "#2e7d32", "Indeciso": "#757575", "No contesta": "#e0e0e0" };
   const labels = Object.keys(distData);
   const dataValues = Object.values(distData);
-  const bgColors = labels.map(label => chartColores[label] || '#94a3b8');
-
-  // If there are no surveys, show a placeholder in the chart or empty state
+  const bgColors = labels.map(l => chartColores[l] || '#94a3b8');
   const totalVotes = dataValues.reduce((a, b) => a + b, 0);
 
-  const ctx = document.getElementById('chart-distribucion').getContext('2d');
-  new Chart(ctx, {
+  new Chart(document.getElementById('chart-distribucion').getContext('2d'), {
     type: 'doughnut',
-    data: {
-      labels: labels,
-      datasets: [{
-        data: dataValues,
-        backgroundColor: bgColors,
-        borderWidth: 1.5,
-        borderColor: '#ffffff'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            font: {
-              family: 'Inter',
-              size: 11
-            },
-            boxWidth: 12
-          }
-        }
-      },
-      cutout: '65%'
-    }
+    data: { labels, datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 1.5, borderColor: '#ffffff' }] },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, cutout: '62%' }
   });
 
-  // Handle map interaction
-  let selectedPolygon = null;
+  const distLegend = document.getElementById('dist-legend');
+  labels.forEach((label, i) => {
+    const n = dataValues[i];
+    const pct = totalVotes ? Math.round((n / totalVotes) * 100) : 0;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:0.4rem';
+    row.innerHTML = `
+      <span style="width:10px;height:10px;border-radius:2px;background:${bgColors[i]};border:1px solid rgba(0,0,0,0.15)"></span>
+      <span style="flex:1;color:var(--gray-600)">${label}</span>
+      <span style="font-weight:600;font-variant-numeric:tabular-nums">${n}</span>
+      <span style="color:var(--gray-500);font-variant-numeric:tabular-nums;width:34px;text-align:right">${pct}%</span>`;
+    distLegend.appendChild(row);
+  });
+
+  // ---- Sensitive-data access: legal warning gate (Ley 25.326) ----
+  const csrftoken = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
+  let aceptada = JSON.parse(document.getElementById('advertencia-aceptada').textContent);
+
+  const modal = document.getElementById('legal-modal');
+  const box = document.getElementById('detalle');
+  let selected = null;     // currently highlighted polygon
+  let pendingNum = null;   // cuadra awaiting confirmation
+
+  async function loadDetalle(num) {
+    box.innerHTML = '<div class="placeholder"><span style="color:var(--gray-500);font-size:0.85rem">Cargando cuadra ' + num + '…</span></div>';
+    try {
+      const r = await fetch(`/dashboard/parcela/${num}/detalle/`);
+      box.innerHTML = r.ok ? await r.text() : '<div class="placeholder"><p style="color:var(--danger)">No se pudo cargar el detalle.</p></div>';
+    } catch (err) {
+      box.innerHTML = '<div class="placeholder"><p style="color:var(--danger)">Error de conexión.</p></div>';
+    }
+  }
+
+  function openModal() { modal.classList.add('open'); document.getElementById('legal-accept').focus(); }
+  function closeModal() { modal.classList.remove('open'); }
+
+  document.getElementById('legal-cancel').addEventListener('click', () => {
+    closeModal();
+    if (selected) { selected.classList.remove('selected'); selected = null; }
+    pendingNum = null;
+  });
+
+  document.getElementById('legal-accept').addEventListener('click', async () => {
+    try {
+      await fetch('/dashboard/aceptar-advertencia/', { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+    } catch (err) { /* el enforcement del backend igual protege el detalle */ }
+    aceptada = true;            // no volver a mostrar el modal en esta sesión
+    closeModal();
+    if (pendingNum !== null) { loadDetalle(pendingNum); pendingNum = null; }
+  });
+
+  modal.addEventListener('click', (e) => { if (e.target === modal) document.getElementById('legal-cancel').click(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) document.getElementById('legal-cancel').click(); });
 
   document.querySelectorAll('polygon[data-numero]').forEach(el => {
-    el.addEventListener('click', async () => {
-      // Remove selected class from previous polygon
-      if (selectedPolygon) {
-        selectedPolygon.classList.remove('selected');
-      }
-      
-      // Add selected class to the current one
+    el.addEventListener('click', () => {
+      if (selected) selected.classList.remove('selected');
       el.classList.add('selected');
-      selectedPolygon = el;
-
+      selected = el;
       const num = el.dataset.numero;
-      const detailContainer = document.getElementById('detalle');
-      
-      detailContainer.innerHTML = `
-        <div style="display:flex; justify-content:center; padding: 3rem;">
-          <div style="border: 3px solid var(--gray-200); border-top: 3px solid var(--primary); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;"></div>
-        </div>
-        <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-      `;
-
-      try {
-        const r = await fetch(`/dashboard/parcela/${num}/detalle/`);
-        if (r.ok) {
-          detailContainer.innerHTML = await r.text();
-          // Scroll smoothly to detail card container if on mobile
-          if (window.innerWidth < 1024) {
-            document.getElementById('detalle-card-container').scrollIntoView({ behavior: 'smooth' });
-          }
-        } else {
-          detailContainer.innerHTML = `<p style="color:var(--danger); padding:1.5rem;">Error al cargar detalles de la parcela.</p>`;
-        }
-      } catch (err) {
-        detailContainer.innerHTML = `<p style="color:var(--danger); padding:1.5rem;">Error de conexión.</p>`;
+      if (aceptada) {
+        loadDetalle(num);       // ya aceptó: acceso directo y fluido
+      } else {
+        pendingNum = num;
+        openModal();            // primera vez en la sesión: exigir aceptación
       }
     });
   });
 </script>
 {% endblock %}
-

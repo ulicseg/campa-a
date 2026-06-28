@@ -3,38 +3,69 @@
 {% block title %}Mis Cargas{% endblock %}
 
 {% block content %}
-<h1>Mis cargas</h1>
-{% if familias %}
-<table>
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Parcela</th>
-            <th>Intención de voto</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for fam in familias %}
-        <tr>
-            <td>{{ fam.nombre_familia }}</td>
-            <td>{{ fam.parcela.numero }}</td>
-            <td>{{ fam.voto.intencion }}</td>
-            <td>{{ fam.fecha|date:"d/m/Y H:i" }}</td>
+<div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+  <div class="card" style="flex: 1; min-height: 0; margin-bottom: 0; display: flex; flex-direction: column; padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 0.75rem; margin-bottom: 1.25rem; flex-shrink: 0;">
+      <div>
+        <h1 style="font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem;">Mis Cargas Realizadas</h1>
+        <p style="color: var(--gray-500); font-size: 0.8rem; margin-bottom: 0;">Historial de encuestas relevadas y registradas por su usuario.</p>
+      </div>
+      <a href="{% url 'cargar_familia' %}" class="btn">
+        <span>Nueva Encuesta</span>
+      </a>
+    </div>
+
+    {% if familias %}
+    <div class="table-container" style="flex: 1; overflow-y: auto; min-height: 0;">
+      <table style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Familia / Hogar</th>
+            <th>Parcela / Cuadra</th>
+            <th>Intención de Voto</th>
+            <th>Fecha y Hora</th>
+            <th style="text-align: center; width: 150px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fam in familias %}
+          <tr>
+            <td style="font-weight: 600; color: var(--primary);">{{ fam.nombre_familia }}</td>
             <td>
-                <a href="{% url 'editar_familia' fam.pk %}">Editar</a>
-                <form method="post" action="{% url 'borrar_familia' fam.pk %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" onclick="return confirm('¿Eliminar esta familia?')">Borrar</button>
-                </form>
+              <span class="badge" style="font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; background-color: var(--gray-100); color: var(--gray-800);">
+                Cuadra {{ fam.parcela.numero }}
+              </span>
             </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>Todavía no cargaste ninguna familia.</p>
-{% endif %}
-<p><a href="{% url 'cargar_familia' %}">Cargar nueva familia</a></p>
+            <td>
+              {% if fam.voto %}
+                <span class="badge" style="font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; background-color: var(--primary-light); color: var(--primary);">
+                  {{ fam.voto.get_intencion_display }}
+                </span>
+              {% else %}
+                <span style="color: var(--gray-500);">—</span>
+              {% endif %}
+            </td>
+            <td style="color: var(--gray-600);">{{ fam.fecha|date:"d/m/Y H:i" }}</td>
+            <td>
+              <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                <a href="{% url 'editar_familia' fam.pk %}" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; height: auto;">Editar</a>
+                <form method="post" action="{% url 'borrar_familia' fam.pk %}" style="display:inline; margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; height: auto;" onclick="return confirm('¿Está seguro de eliminar este registro?')">Borrar</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 4rem 2rem; color: var(--gray-500); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <p style="font-size: 0.95rem; font-weight: 500; margin-bottom: 1rem;">Aún no ha registrado ningún relevamiento.</p>
+      <a href="{% url 'cargar_familia' %}" class="btn">Comenzar Primer Carga</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

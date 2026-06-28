@@ -1,31 +1,48 @@
-<h2>Cuadra {{ parcela.numero }}</h2>
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.6rem;">
+  <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--primary);">Cuadra {{ parcela.numero }}</h3>
+  <span style="font-size: 0.78rem; color: var(--gray-500);">{{ familias|length }} familia{{ familias|length|pluralize }}</span>
+</div>
+
 {% if familias %}
-<table>
-  <thead>
-    <tr>
-      <th>Nombre familia</th>
-      <th>N.° familia</th>
-      <th>Integrantes</th>
-      <th>Contacto 1</th>
-      <th>Contacto 2</th>
-      <th>Intención de voto</th>
-      <th>Cargado por</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for familia in familias %}
-    <tr>
-      <td>{{ familia.nombre_familia }}</td>
-      <td>{{ familia.numero_familia }}</td>
-      <td>{{ familia.integrantes }}</td>
-      <td>{{ familia.contacto_1 }}</td>
-      <td>{{ familia.contacto_2 }}</td>
-      <td>{% if familia.voto %}{{ familia.voto.get_intencion_display }}{% else %}—{% endif %}</td>
-      <td>{{ familia.cargada_por.username }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Familia</th>
+        <th>N.°</th>
+        <th>Integrantes</th>
+        <th>Contacto</th>
+        <th>Intención de voto</th>
+        <th>Cargado por</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for familia in familias %}
+      <tr>
+        <td style="font-weight: 600;">{{ familia.nombre_familia }}</td>
+        <td class="num">{{ familia.numero_familia }}</td>
+        <td class="num">{{ familia.integrantes }}</td>
+        <td class="num" style="color: var(--gray-600);">
+          {{ familia.contacto_1|default:"—" }}{% if familia.contacto_2 %}<br>{{ familia.contacto_2 }}{% endif %}
+        </td>
+        <td>
+          {% if familia.voto %}
+            <span class="badge badge-vote" style="background-color:
+              {% if familia.voto.intencion == 'PJ' %}#1f4e9c
+              {% elif familia.voto.intencion == 'UCR' %}#c62828
+              {% elif familia.voto.intencion == 'Otro' %}#2e7d32
+              {% elif familia.voto.intencion == 'Indeciso' %}#757575
+              {% else %}#94a3b8{% endif %};">{{ familia.voto.get_intencion_display }}</span>
+          {% else %}
+            <span style="color: var(--gray-500);">—</span>
+          {% endif %}
+        </td>
+        <td style="color: var(--gray-600);">{{ familia.cargada_por.username }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% else %}
-<p>Sin familias relevadas en esta cuadra.</p>
+<p style="font-size: 0.85rem; color: var(--gray-500); padding: 1rem 0;">Sin familias relevadas en esta cuadra.</p>
 {% endif %}
