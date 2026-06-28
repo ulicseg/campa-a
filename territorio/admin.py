@@ -1,3 +1,10 @@
 from django.contrib import admin
 
-# Register your models here.
+from territorio.models import Parcela
+
+
+@admin.register(Parcela)
+class ParcelaAdmin(admin.ModelAdmin):
+    list_display = ("numero",)
+    search_fields = ("numero",)
+    ordering = ("numero",)
