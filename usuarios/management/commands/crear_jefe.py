@@ -5,7 +5,7 @@ from usuarios.models import PerfilUsuario
 
 
 class Command(BaseCommand):
-    help = "Crea (o actualiza) un Jefe de Campaña con acceso al panel y al admin."
+    help = "Crea (o actualiza) un Jefe de Campaña (rol de la app, sin permisos de Django admin)."
 
     def add_arguments(self, parser):
         parser.add_argument("username", help="Nombre de usuario del jefe.")
@@ -17,8 +17,6 @@ class Command(BaseCommand):
         username = options["username"]
         user, _ = User.objects.get_or_create(username=username)
         user.set_password(options["password"])
-        user.is_staff = True
-        user.is_superuser = True
         user.save()
         PerfilUsuario.objects.update_or_create(
             user=user, defaults={"rol": PerfilUsuario.ROL_JEFE}

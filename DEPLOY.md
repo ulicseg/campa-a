@@ -72,7 +72,13 @@ export DJANGO_SECRET_KEY="la-misma-clave-del-wsgi"
 python manage.py migrate
 python manage.py seed_parcelas          # carga las 64 parcelas
 python manage.py collectstatic --noinput
-python manage.py crear_jefe admin --password "ELEGI_UNA_CONTRASEÑA"
+
+# Superadmin técnico (acceso a /admin de Django):
+DJANGO_SUPERUSER_PASSWORD="CLAVE_DEL_SUPERADMIN" \
+  python manage.py createsuperuser --noinput --username superadmin --email admin@example.com
+
+# Jefe de Campaña (rol de la app, entra al dashboard):
+python manage.py crear_jefe jefe --password "CLAVE_DEL_JEFE"
 ```
 
 ## 8. Recargar
