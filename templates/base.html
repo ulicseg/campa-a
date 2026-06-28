@@ -1,6 +1,259 @@
 {% load static %}
-<!doctype html><html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Gestión Territorial{% endblock %}</title>
-{% block head %}{% endblock %}
-</head><body>{% block content %}{% endblock %}</body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Gestión Territorial{% endblock %} | Campaña</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+      
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--gray-50);
+      color: var(--gray-900);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar styling */
+    header {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--gray-200);
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo-link {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--gray-900);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--gray-600);
+      font-weight: 500;
+      font-size: 0.95rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--primary);
+      background-color: var(--primary-light);
+    }
+
+    .nav-link.active {
+      color: var(--primary);
+      background-color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      background-color: var(--gray-100);
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray-800);
+    }
+
+    .user-role {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .user-role.jefe {
+      background-color: var(--accent);
+    }
+
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .logout-btn:hover {
+      background-color: #fee2e2;
+    }
+
+    /* Main container */
+    main {
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Card Layouts */
+    .card {
+      background: #ffffff;
+      border-radius: var(--radius);
+      border: 1px solid var(--gray-200);
+      box-shadow: var(--shadow-md);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Utility titles */
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      color: var(--gray-900);
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Footer */
+    footer {
+      background-color: var(--gray-900);
+      color: var(--gray-300);
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.875rem;
+      margin-top: auto;
+      border-top: 1px solid var(--gray-800);
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <header>
+    <div class="nav-container">
+      <a href="{% url 'home' %}" class="logo-link">
+        <span class="logo-text">CAMPAÑA 360</span>
+      </a>
+      
+      <nav style="display: flex; align-items: center; gap: 2rem;">
+        {% if user.is_authenticated %}
+          <ul class="nav-menu">
+            {% if user.perfil.es_jefe %}
+              <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+              <li><a href="{% url 'gestion_encuestadores' %}" class="nav-link">Encuestadores</a></li>
+            {% endif %}
+            {% if user.perfil.es_encuestador %}
+              <li><a href="{% url 'cargar_familia' %}" class="nav-link">Cargar Encuesta</a></li>
+              <li><a href="{% url 'mis_cargas' %}" class="nav-link">Mis Cargas</a></li>
+            {% endif %}
+          </ul>
+          
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="user-badge">
+              <span>{{ user.username }}</span>
+              <span class="user-role {% if user.perfil.es_jefe %}jefe{% endif %}">
+                {{ user.perfil.get_rol_display }}
+              </span>
+            </div>
+            
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+              {% csrf_token %}
+              <button type="submit" class="logout-btn">Salir</button>
+            </form>
+          </div>
+        {% else %}
+          <a href="{% url 'login' %}" class="nav-link active" style="text-decoration: none;">Iniciar Sesión</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Campaña Electoral Territorial. Todos los derechos reservados. Cumplimiento estricto de Ley 25.326.</p>
+  </footer>
+
+</body>
+</html>
+

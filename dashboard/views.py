@@ -3,6 +3,7 @@ from django.views import View
 from usuarios.mixins import JefeRequiredMixin
 from territorio.models import Parcela
 from dashboard.aggregation import resumen_parcela, COLORES
+from dashboard.kpis import calcular_kpis
 from encuestas.models import Familia
 
 
@@ -10,8 +11,10 @@ class Dashboard(JefeRequiredMixin, View):
     def get(self, request):
         datos = [{"parcela": p, "resumen": resumen_parcela(p)}
                  for p in Parcela.objects.all()]
+        kpis = calcular_kpis()
         return render(request, "dashboard/dashboard.html",
-                      {"parcelas_resumen": datos, "colores": COLORES})
+                      {"parcelas_resumen": datos, "colores": COLORES, "kpis": kpis})
+
 
 
 class DetalleParcela(JefeRequiredMixin, View):
