@@ -67,18 +67,18 @@ contenido de `deploy/pythonanywhere_wsgi.py`, reemplazando
 cd /home/mapacalor/campa-a
 export DJANGO_DEBUG=False
 export DJANGO_ALLOWED_HOSTS=mapacalor.pythonanywhere.com
-export DJANGO_SECRET_KEY="la-misma-clave-del-wsgi"
+export DJANGO_SECRET_KEY="rd$!muj33w_$_4=c++p%6o-hrs6^8ttboa%(ey(ctwp%s$6(mp"
 
 python manage.py migrate
-python manage.py seed_parcelas          # carga las 64 parcelas
+python manage.py seed_parcelas          # carga las parcelas
 python manage.py collectstatic --noinput
 
 # Superadmin técnico (acceso a /admin de Django):
-DJANGO_SUPERUSER_PASSWORD="CLAVE_DEL_SUPERADMIN" \
-  python manage.py createsuperuser --noinput --username superadmin --email admin@example.com
+DJANGO_SUPERUSER_PASSWORD="ulises44086174" \
+  python manage.py createsuperuser --noinput --username ulicseg --email ulicseg@gmail.com
 
 # Jefe de Campaña (rol de la app, entra al dashboard):
-python manage.py crear_jefe jefe --password "CLAVE_DEL_JEFE"
+python manage.py crear_jefe jefe --password "[PASSWORD]"
 ```
 
 ## 8. Recargar

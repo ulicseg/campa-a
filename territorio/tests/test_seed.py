@@ -4,13 +4,13 @@ from territorio.models import Parcela
 
 
 class SeedParcelasTest(TestCase):
-    def test_seed_creates_64_parcelas(self):
+    def test_seed_creates_all_parcelas(self):
         call_command("seed_parcelas")
-        self.assertEqual(Parcela.objects.count(), 64)
+        self.assertEqual(Parcela.objects.count(), 69)
         self.assertTrue(Parcela.objects.filter(numero=1).exists())
-        self.assertTrue(Parcela.objects.filter(numero=64).exists())
+        self.assertTrue(Parcela.objects.filter(numero=69).exists())
 
     def test_seed_is_idempotent(self):
         call_command("seed_parcelas")
         call_command("seed_parcelas")
-        self.assertEqual(Parcela.objects.count(), 64)
+        self.assertEqual(Parcela.objects.count(), 69)

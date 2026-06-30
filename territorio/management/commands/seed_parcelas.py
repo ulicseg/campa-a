@@ -4,11 +4,11 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from territorio.models import Parcela
 
-AREA_RE = re.compile(r'alt="(\d+)"[^>]*coords="([\d,]+)"')
+AREA_RE = re.compile(r'alt="(\d+)"[^>]*coords="([\d,-]+)"')
 
 
 class Command(BaseCommand):
-    help = "Carga las 64 parcelas desde coordenadas.md (idempotente)."
+    help = "Carga las parcelas desde coordenadas.md (idempotente)."
 
     def handle(self, *args, **options):
         path = Path(settings.BASE_DIR) / "coordenadas.md"
