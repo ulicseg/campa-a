@@ -71,4 +71,7 @@
     <area target="" alt="67" title="67" href="#" coords="892,784,895,749,911,731,939,716,998,706,1026,703,1035,838,897,838" shape="poly">
     <area target="" alt="68" title="68" href="#" coords="543,785,591,762,638,748,688,742,734,737,780,733,817,739,843,754,864,777,875,801,887,838,543,834" shape="poly">
     <area target="" alt="69" title="69" href="#" coords="533,767,691,608,764,558,812,648,814,669,804,694,770,705,688,713,606,731" shape="poly">
+    <area target="" alt="70" title="70" href="#" coords="312,641,500,518,526,564,489,591,550,685,398,780" shape="poly">
+    <area target="" alt="71" title="71" href="#" coords="557,685,634,627,640,634,574,711,564,697" shape="poly">
+    <area target="" alt="72" title="72" href="#" coords="400,786,550,693,565,721,444,843" shape="poly">
 </map>

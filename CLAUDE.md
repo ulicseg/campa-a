@@ -8,7 +8,7 @@ Este repositorio está en **fase de diseño** — todavía no hay código. Conti
 
 Archivos fuente:
 - `contexto.md` — briefing del proyecto: objetivo, roles/permisos, lógica del mapa de calor y restricciones legales.
-- `coordenadas.md` — image map HTML con 69 parcelas (`<area shape="poly">`), cada una con `alt`/`title` = número de parcela y `coords` de polígono.
+- `coordenadas.md` — image map HTML con 72 parcelas (`<area shape="poly">`), cada una con `alt`/`title` = número de parcela y `coords` de polígono.
 - `mapa unidas.jpeg` — imagen base estática (Colonias Unidas, Chaco, Argentina) sobre la que se dibujan las parcelas.
 
 ## Stack y despliegue
@@ -20,7 +20,7 @@ Archivos fuente:
 
 Plataforma de gestión territorial y encuestas políticas. El núcleo es un **mapa de calor interactivo** que visualiza resultados de encuestas parcela por parcela (cuadra), más un panel de KPIs.
 
-- Las 69 parcelas del image map son las unidades geográficas. Las `coords` de `coordenadas.md` se renderizan como polígonos interactivos (SVG o equivalente) sobre `mapa unidas.jpeg`.
+- Las 72 parcelas del image map son las unidades geográficas. Las `coords` de `coordenadas.md` se renderizan como polígonos interactivos (SVG o equivalente) sobre `mapa unidas.jpeg`.
 - Color de cada parcela = partido/tendencia con mayoría en esa cuadra. Opacidad = porcentaje de dominancia o cantidad de encuestas.
 
 ## Reglas críticas (no negociables)
