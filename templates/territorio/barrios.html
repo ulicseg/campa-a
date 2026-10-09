@@ -137,6 +137,7 @@
         </div>
       </div>
       <div class="t-actions">
+        <button type="button" class="btn-secondary" id="btn-pdf" hidden>Imprimir PDF</button>
         <button type="button" class="btn-ghost-danger" id="btn-borrar" hidden>Eliminar barrio</button>
         <button type="button" class="btn-secondary" id="btn-descartar" hidden>Descartar</button>
         <button type="button" id="btn-guardar" disabled>Guardar cambios</button>
@@ -158,6 +159,7 @@
 <form method="post" id="form-borrar" hidden>{% csrf_token %}</form>
 
 {{ datos|json_script:"datos" }}
+{{ advertencia_aceptada|json_script:"advertencia-aceptada" }}
 
 {% if messages %}
   {% for message in messages %}
@@ -171,6 +173,7 @@
   const NS = 'http://www.w3.org/2000/svg';
   const URL_EDITAR = "{% url 'editar_barrio' 0 %}";
   const URL_BORRAR = "{% url 'borrar_barrio' 0 %}";
+  const URL_PDF = "{% url 'pdf_barrio' 0 %}";
   const urlDe = (tpl, id) => tpl.replace('/0/', '/' + id + '/');
 
   const barrios = D.barrios, parcelas = D.parcelas;
@@ -296,6 +299,7 @@
     $('t-name').textContent = hay ? nombreDe[actual] : 'Sin barrio seleccionado';
     $('t-swatch').style.background = hay ? '#0d9488' : 'transparent';
     $('btn-borrar').hidden = !hay;
+    $('btn-pdf').hidden = !hay;
     $('hint').style.visibility = hay ? 'visible' : 'hidden';
     const s = sucio();
     $('btn-guardar').disabled = !s;
@@ -350,6 +354,23 @@
     f.action = urlDe(URL_BORRAR, actual);
     sucioGuardado = true;
     f.submit();
+  });
+
+  /* PDF del barrio: datos nominales, exige la advertencia legal (Ley 25.326). */
+  let aceptada = JSON.parse(document.getElementById('advertencia-aceptada').textContent);
+  $('btn-pdf').addEventListener('click', async () => {
+    if (actual === null) return;
+    if (!aceptada) {
+      if (!confirm('Atención: va a acceder a datos personales y sensibles protegidos por la Ley 25.326. ' +
+                   'La difusión, filtración o mal uso de esta información es de su exclusiva responsabilidad legal y ética. ¿Desea continuar?')) return;
+      const token = document.querySelector('#form-guardar [name=csrfmiddlewaretoken]').value;
+      try {
+        const r = await fetch("{% url 'aceptar_advertencia' %}", { method: 'POST', headers: { 'X-CSRFToken': token } });
+        if (!r.ok) throw new Error();
+      } catch (e) { alert('No se pudo registrar la aceptación. Intente de nuevo.'); return; }
+      aceptada = true;
+    }
+    window.open(urlDe(URL_PDF, actual), '_blank', 'noopener');
   });
 
   let sucioGuardado = false;

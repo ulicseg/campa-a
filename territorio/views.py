@@ -5,6 +5,7 @@ from django.views import View
 
 from territorio.forms import AsignarParcelasForm, BarrioForm
 from territorio.models import Barrio, Parcela
+from dashboard.views import ADVERTENCIA_SESSION_KEY
 from usuarios.mixins import JefeRequiredMixin
 
 
@@ -37,7 +38,11 @@ class ListaBarrios(JefeRequiredMixin, View):
             ],
             "seleccionado": seleccionado,
         }
-        return render(request, "territorio/barrios.html", {"form": form, "datos": datos})
+        return render(request, "territorio/barrios.html", {
+            "form": form,
+            "datos": datos,
+            "advertencia_aceptada": bool(request.session.get(ADVERTENCIA_SESSION_KEY)),
+        })
 
     def get(self, request):
         return self._render(request, BarrioForm())

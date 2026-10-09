@@ -1,6 +1,9 @@
 <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.6rem;">
   <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--primary);">Cuadra {{ parcela.numero }}</h3>
-  <span style="font-size: 0.78rem; color: var(--gray-500);">{{ familias|length }} familia{{ familias|length|pluralize }}</span>
+  <span style="display: flex; align-items: baseline; gap: 0.8rem; font-size: 0.78rem; color: var(--gray-500);">
+    {{ familias|length }} familia{{ familias|length|pluralize }}
+    <a href="{% url 'pdf_parcela' parcela.numero %}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.78rem;">Imprimir PDF</a>
+  </span>
 </div>
 
 {% if familias %}
