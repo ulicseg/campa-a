@@ -400,6 +400,7 @@
             {% if user.perfil.es_jefe %}
               <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
               <li><a href="{% url 'gestion_encuestadores' %}" class="nav-link">Encuestadores</a></li>
+              <li><a href="{% url 'lista_barrios' %}" class="nav-link">Barrios</a></li>
             {% endif %}
             {% if user.perfil.es_encuestador %}
               <li><a href="{% url 'cargar_familia' %}" class="nav-link">Cargar Encuesta</a></li>

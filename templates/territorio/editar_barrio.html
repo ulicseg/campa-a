@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Barrio {{ barrio.nombre }}{% endblock %}
+
+{% block head %}
+<style>
+  .page { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+  .page-head { border-bottom: 1px solid var(--gray-200); padding-bottom: 0.6rem; margin-bottom: 1rem; }
+  .page-head h1 { font-size: 1.1rem; margin-bottom: 0.15rem; }
+  .page-head p { color: var(--gray-500); font-size: 0.82rem; }
+
+  .parcela-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 0.35rem;
+    padding: 0.6rem;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    background: var(--gray-50);
+  }
+
+  .parcela-chip {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+    line-height: 1.1;
+  }
+  .parcela-chip:hover { border-color: var(--accent); color: var(--accent-dark); }
+  .parcela-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .parcela-chip:has(input:checked) { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+
+  /* Manzana que hoy pertenece a otro barrio: se puede marcar y pasa a este. */
+  .parcela-chip.otro { border-style: dashed; color: var(--gray-500); }
+  .parcela-chip .otro-nombre { font-size: 0.55rem; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+
+  .leyenda { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem; }
+  .botones { display: flex; gap: 0.5rem; margin-top: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-head">
+    <h1>Barrio {{ barrio.nombre }}</h1>
+    <p>Marque las manzanas que forman este barrio y guarde.</p>
+  </div>
+
+  <div class="card">
+    <form method="post" style="margin: 0;">
+      {% csrf_token %}
+      <div class="parcela-grid">
+        {% for chip in form.parcelas %}
+          {% with otro=chip.data.value.instance.barrio %}
+          <label class="parcela-chip{% if otro and otro.pk != barrio.pk %} otro{% endif %}"
+                 title="Cuadra {{ chip.choice_label }}{% if otro and otro.pk != barrio.pk %} (hoy en {{ otro.nombre }}){% endif %}">
+            {{ chip.tag }}
+            <span>{{ chip.choice_label }}</span>
+            {% if otro and otro.pk != barrio.pk %}<span class="otro-nombre">{{ otro.nombre }}</span>{% endif %}
+          </label>
+          {% endwith %}
+        {% endfor %}
+      </div>
+      <div class="leyenda">
+        <span>Marcada: pertenece a este barrio</span>
+        <span>Borde punteado: está en otro barrio (si la marca, pasa a este)</span>
+      </div>
+      <div class="botones">
+        <button type="submit">Guardar</button>
+        <a href="{% url 'lista_barrios' %}" class="btn btn-secondary">Volver</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
