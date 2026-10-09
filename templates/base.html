@@ -384,6 +384,28 @@
       border-top: 1px solid var(--gray-800);
     }
   </style>
+  <script>
+    /* Ajusta el contenedor del mapa al tamaño de la imagen: el alto sale del espacio
+       disponible y el ancho de la proporción 1280x854, sin dejar bandas vacías a los lados.
+       En pantallas chicas (<1024px) queda el layout fluido normal. */
+    window.ajustarMapa = function (stage, frame, container, reservedW) {
+      const RATIO = 1280 / 854;
+      function fit() {
+        if (window.innerWidth < 1024) { frame.style.height = ''; frame.style.width = ''; return; }
+        frame.style.height = '0px'; frame.style.width = '0px';
+        const cs = getComputedStyle(stage);
+        const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+        const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+        const maxH = stage.clientHeight - padY;
+        const maxW = container.clientWidth - reservedW - padX;
+        const h = Math.max(0, Math.min(maxH, maxW / RATIO));
+        frame.style.height = h + 'px';
+        frame.style.width = (h * RATIO) + 'px';
+      }
+      window.addEventListener('resize', fit);
+      fit();
+    };
+  </script>
   {% block head %}{% endblock %}
 </head>
 <body>
