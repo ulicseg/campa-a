@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.db import transaction
 
 from territorio.models import Parcela
 from usuarios.models import PerfilUsuario
@@ -12,7 +11,6 @@ class Command(BaseCommand):
         "usuario y contraseña 'parcelaX', asignada a la parcela X (idempotente)."
     )
 
-    @transaction.atomic
     def handle(self, *args, **options):
         parcelas = list(Parcela.objects.all())
         if not parcelas:
@@ -21,7 +19,8 @@ class Command(BaseCommand):
             )
             return
         creadas = actualizadas = 0
-        for parcela in parcelas:
+        total = len(parcelas)
+        for i, parcela in enumerate(parcelas, 1):
             username = f"parcela{parcela.numero}"
             user, creada = User.objects.get_or_create(username=username)
             user.set_password(username)
@@ -30,6 +29,7 @@ class Command(BaseCommand):
                 user=user, defaults={"rol": PerfilUsuario.ROL_ENCUESTADOR}
             )
             perfil.parcelas.set([parcela])
+            self.stdout.write(f"[{i}/{total}] {username}")
             if creada:
                 creadas += 1
             else:
