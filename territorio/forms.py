@@ -8,6 +8,7 @@ class BarrioForm(forms.ModelForm):
         model = Barrio
         fields = ["nombre"]
         labels = {"nombre": "Nombre del barrio"}
+        widgets = {"nombre": forms.TextInput(attrs={"placeholder": "Nombre del nuevo barrio", "autocomplete": "off"})}
 
 
 class AsignarParcelasForm(forms.Form):

@@ -1,106 +1,365 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Barrios{% endblock %}
 
 {% block head %}
 <style>
-  .page { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
-  .page-head { border-bottom: 1px solid var(--gray-200); padding-bottom: 0.6rem; margin-bottom: 1rem; }
-  .page-head h1 { font-size: 1.1rem; margin-bottom: 0.15rem; }
-  .page-head p { color: var(--gray-500); font-size: 0.82rem; }
+  .bp { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  @media (min-width: 1024px) { .bp { grid-template-columns: 340px minmax(0, 1fr); } }
 
-  .alta { display: flex; gap: 0.5rem; align-items: flex-start; max-width: 520px; }
-  .alta input { flex: 1; }
-  .field-error { font-size: 0.78rem; color: var(--danger); margin-top: 0.3rem; }
+  .bp > .card { margin-bottom: 0; padding: 0; overflow: hidden; }
 
-  .flash { padding: 0.6rem 0.9rem; border-radius: var(--radius); font-size: 0.82rem; margin-bottom: 0.85rem; border: 1px solid; }
-  .flash.success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
-  .flash.error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  /* ---------- Sidebar ---------- */
+  .side-head { padding: 1rem 1rem 0.85rem; border-bottom: 1px solid var(--gray-200); flex-shrink: 0; }
+  .side-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.7rem; }
+  .side-title h1 { font-size: 1.05rem; margin: 0; }
+  .side-title span { font-size: 0.78rem; color: var(--gray-500); font-variant-numeric: tabular-nums; }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-  .vacio { color: var(--gray-500); font-size: 0.8rem; }
-  .acciones { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
-  .acciones form { margin: 0; }
-  .btn-sm { font-size: 0.78rem; padding: 0.3rem 0.65rem; }
-  .btn-delete { background: none; border: none; color: var(--danger); font-size: 0.78rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 5px; }
-  .btn-delete:hover { background: #fef2f2; }
+  .add-row { display: flex; gap: 0.4rem; }
+  .add-row input { flex: 1; min-width: 0; }
+  .add-row button { padding: 0.5rem 0.8rem; flex-shrink: 0; }
+  .add-error { font-size: 0.78rem; color: var(--danger); margin-top: 0.35rem; }
+
+  .search { margin-top: 0.6rem; }
+  .search input { background: var(--gray-50); }
+
+  .blist { flex: 1; min-height: 0; overflow-y: auto; list-style: none; padding: 0.4rem; max-height: 280px; }
+  @media (min-width: 1024px) { .blist { max-height: none; } }
+
+  .bitem {
+    width: 100%; display: flex; align-items: center; gap: 0.6rem;
+    background: transparent; color: var(--gray-800);
+    padding: 0.55rem 0.65rem; border-radius: 6px; border: 1px solid transparent;
+    font-weight: 500; font-size: 0.86rem; text-align: left; justify-content: flex-start;
+  }
+  .bitem:hover { background: var(--gray-100); }
+  .bitem[aria-current="true"] { background: var(--primary-light); border-color: #d6e0ee; color: var(--primary); font-weight: 600; }
+  .bitem:focus-visible, .btn:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .bname { flex: 1; min-width: 0; line-height: 1.25; }
+  .bcount { font-size: 0.75rem; color: var(--gray-500); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .bcount.cero { color: var(--warning); }
+  .bempty { padding: 1.5rem 1rem; text-align: center; color: var(--gray-500); font-size: 0.84rem; }
+
+  .side-foot { padding: 0.65rem 1rem; border-top: 1px solid var(--gray-200); background: var(--gray-50); font-size: 0.78rem; color: var(--gray-600); flex-shrink: 0; }
+  .side-foot strong { color: var(--gray-900); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Map panel ---------- */
+  .map-panel { display: flex; flex-direction: column; min-height: 0; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.85rem 1rem; border-bottom: 1px solid var(--gray-200); flex-shrink: 0; }
+  .t-id { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+  .t-id .swatch { width: 16px; height: 16px; border-radius: 4px; }
+  .t-name { font-size: 1.05rem; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; line-height: 1.2; }
+  .t-meta { font-size: 0.78rem; color: var(--gray-500); }
+  .t-meta .dirty { color: var(--warning); font-weight: 600; }
+  .t-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .t-actions button { padding: 0.45rem 0.9rem; }
+  .t-actions button[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .btn-ghost-danger { background: transparent; color: var(--danger); padding: 0.45rem 0.6rem !important; }
+  .btn-ghost-danger:hover { background: #fef2f2; }
+
+  .map-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #faf6f1; padding: 0.6rem; }
+  .map-frame { position: relative; aspect-ratio: 1280 / 854; width: 100%; max-height: 100%; max-width: calc((100vh - 18rem) * 1.4988); }
+  @media (max-width: 1023px) { .map-frame { max-width: 100%; } }
+  .map-frame img { width: 100%; height: 100%; display: block; border-radius: 4px; user-select: none; }
+  .map-frame svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  svg polygon { cursor: pointer; mix-blend-mode: multiply; transition: fill 0.12s ease, stroke 0.12s ease; }
+  svg polygon:hover { stroke: #0f172a !important; stroke-width: 2.5px !important; }
+  svg polygon:focus-visible { outline: none; stroke: var(--accent) !important; stroke-width: 3px !important; }
+  .nav-off svg polygon { cursor: default; }
+
+  .tip { position: absolute; z-index: 5; pointer-events: none; background: var(--gray-900); color: #fff; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.75rem; line-height: 1.35; box-shadow: var(--shadow-lg); white-space: nowrap; display: none; transform: translate(12px, 12px); }
+  .tip b { display: block; font-size: 0.8rem; }
+  .tip em { color: #5eead4; font-style: normal; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: center; padding: 0.65rem 1rem; border-top: 1px solid var(--gray-200); font-size: 0.76rem; color: var(--gray-600); flex-shrink: 0; }
+  .legend .lg { display: flex; align-items: center; gap: 0.4rem; }
+  .legend .lg i { width: 14px; height: 14px; border-radius: 3px; display: block; }
+  .legend .hint { margin-left: auto; color: var(--gray-500); }
+
+  .no-barrios { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem; color: var(--gray-500); font-size: 0.9rem; }
+
+  /* ---------- Toast ---------- */
+  .toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 1000; padding: 0.7rem 1.1rem; border-radius: var(--radius); font-size: 0.86rem; font-weight: 500; box-shadow: var(--shadow-lg); border: 1px solid; max-width: calc(100vw - 2rem); }
+  .toast.success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+  .toast.error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  .toast.out { opacity: 0; transition: opacity 0.4s ease; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page">
-  <div class="page-head">
-    <h1>Barrios</h1>
-    <p>Cree los barrios y asígneles las manzanas que los componen.</p>
-  </div>
+<div class="bp">
 
-  {% for message in messages %}
-    <div class="flash {{ message.tags }}">{{ message }}</div>
-  {% endfor %}
+  <!-- ===== Barrios ===== -->
+  <section class="card" aria-label="Lista de barrios">
+    <div class="side-head">
+      <div class="side-title">
+        <h1>Barrios</h1>
+        <span id="total-barrios"></span>
+      </div>
 
-  <div class="card">
-    <form method="post" style="margin: 0;">
-      {% csrf_token %}
-      <label for="{{ form.nombre.id_for_label }}" style="display: block; margin-bottom: 0.35rem;">Nuevo barrio</label>
-      <div class="alta">
+      <form method="post" class="add-row" aria-label="Agregar barrio">
+        {% csrf_token %}
         {{ form.nombre }}
         <button type="submit">Agregar</button>
+      </form>
+      {% if form.nombre.errors %}<div class="add-error">{{ form.nombre.errors|join:" " }}</div>{% endif %}
+
+      <div class="search">
+        <input type="text" id="buscar" placeholder="Buscar barrio…" autocomplete="off" aria-label="Buscar barrio">
       </div>
-      {% if form.nombre.errors %}<div class="field-error">{{ form.nombre.errors|join:" " }}</div>{% endif %}
-    </form>
-  </div>
-
-  <div class="card">
-    {% if barrios %}
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Barrio</th>
-            <th>Manzanas</th>
-            <th style="text-align: right;">Cant.</th>
-            <th style="text-align: right;">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for barrio in barrios %}
-          {% with parcelas=barrio.parcelas.all %}
-          <tr>
-            <td style="font-weight: 600;">{{ barrio.nombre }}</td>
-            <td>
-              {% if parcelas %}
-                <div class="chips">{% for p in parcelas %}<span class="badge num">{{ p.numero }}</span>{% endfor %}</div>
-              {% else %}
-                <span class="vacio">Sin manzanas asignadas</span>
-              {% endif %}
-            </td>
-            <td class="num" style="text-align: right;">{{ parcelas|length }}</td>
-            <td>
-              <div class="acciones">
-                <a href="{% url 'editar_barrio' barrio.pk %}" class="btn btn-secondary btn-sm">Manzanas</a>
-                <form method="post" action="{% url 'borrar_barrio' barrio.pk %}"
-                      onsubmit="return confirm('¿Eliminar el barrio {{ barrio.nombre|escapejs }}? Sus manzanas quedarán sin barrio.');">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-delete">Eliminar</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          {% endwith %}
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
-    {% else %}
-      <p class="vacio" style="text-align: center; padding: 2rem 1rem;">Todavía no hay barrios. Agregue el primero arriba.</p>
-    {% endif %}
-  </div>
 
-  {% if sin_barrio %}
-  <div class="card">
-    <h2 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Manzanas sin barrio ({{ sin_barrio|length }})</h2>
-    <div class="chips">{% for p in sin_barrio %}<span class="badge num">{{ p.numero }}</span>{% endfor %}</div>
-  </div>
-  {% endif %}
+    <ul class="blist" id="lista"></ul>
+
+    <div class="side-foot" id="sin-barrio-foot"></div>
+  </section>
+
+  <!-- ===== Mapa ===== -->
+  <section class="card map-panel" aria-label="Asignación de manzanas">
+    <div class="toolbar">
+      <div class="t-id">
+        <span class="swatch" id="t-swatch"></span>
+        <div>
+          <div class="t-name" id="t-name">Sin barrio seleccionado</div>
+          <div class="t-meta" id="t-meta">Cree un barrio para empezar.</div>
+        </div>
+      </div>
+      <div class="t-actions">
+        <button type="button" class="btn-ghost-danger" id="btn-borrar" hidden>Eliminar barrio</button>
+        <button type="button" class="btn-secondary" id="btn-descartar" hidden>Descartar</button>
+        <button type="button" id="btn-guardar" disabled>Guardar cambios</button>
+      </div>
+    </div>
+
+    <div class="map-stage" id="stage">
+      <div class="map-frame" id="frame">
+        <img src="{% static 'img/mapa_unidas.jpeg' %}" alt="Mapa de Colonias Unidas" draggable="false">
+        <svg viewBox="0 0 1280 854" id="svg" role="group" aria-label="Manzanas"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="lg"><i style="background:#0d9488"></i>Manzana de este barrio</span>
+      <span class="lg"><i style="background:linear-gradient(90deg,#e4a8a0,#b9d5a8,#a8c4e0)"></i>De otro barrio (un color por barrio)</span>
+      <span class="lg"><i style="border:1.5px dashed #64748b"></i>Sin barrio</span>
+      <span class="hint" id="hint">Haga clic en una manzana para sumarla o quitarla.</span>
+    </div>
+  </section>
 </div>
+
+<form method="post" id="form-guardar" hidden>{% csrf_token %}</form>
+<form method="post" id="form-borrar" hidden>{% csrf_token %}</form>
+
+{{ datos|json_script:"datos" }}
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="toast {{ message.tags }}" role="status">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('datos').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+  const URL_EDITAR = "{% url 'editar_barrio' 0 %}";
+  const URL_BORRAR = "{% url 'borrar_barrio' 0 %}";
+  const urlDe = (tpl, id) => tpl.replace('/0/', '/' + id + '/');
+
+  const barrios = D.barrios, parcelas = D.parcelas;
+  const nombreDe = {}, hue = {};
+  barrios.forEach((b, i) => { nombreDe[b.id] = b.nombre; hue[b.id] = (i * 137.5) % 360; });
+
+  const original = {}, asignada = {};
+  parcelas.forEach(p => { original[p.id] = p.barrio; asignada[p.id] = p.barrio; });
+  let actual = D.seleccionado;
+
+  const $ = id => document.getElementById(id);
+  const hsl = (id, s, l, a) => `hsl(${hue[id]} ${s}% ${l}% / ${a})`;
+  const cuenta = id => parcelas.filter(p => asignada[p.id] === id).length;
+  const sucio = () => parcelas.some(p => original[p.id] !== asignada[p.id]);
+  const plural = (n, s, p) => n + ' ' + (n === 1 ? s : p);
+
+  /* ---------- Mapa ---------- */
+  const svg = $('svg'), tip = $('tip'), frame = $('frame');
+  const nodos = {};
+
+  parcelas.forEach(p => {
+    const g = document.createElementNS(NS, 'g');
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', p.points);
+    poly.setAttribute('tabindex', '0');
+    poly.setAttribute('role', 'button');
+    poly.setAttribute('aria-label', 'Cuadra ' + p.numero);
+
+    g.appendChild(poly); svg.appendChild(g);
+    nodos[p.id] = poly;
+
+    poly.addEventListener('click', () => alternar(p));
+    poly.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(p); } });
+    poly.addEventListener('mousemove', e => mostrarTip(e, p));
+    poly.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  });
+
+  function pintar(p) {
+    const poly = nodos[p.id];
+    const b = asignada[p.id];
+    if (b === null) {
+      poly.setAttribute('fill', 'transparent');
+      poly.setAttribute('stroke', '#64748b');
+      poly.setAttribute('stroke-width', '1');
+      poly.setAttribute('stroke-dasharray', '4 3');
+    } else if (b === actual) {
+      poly.setAttribute('fill', '#0d9488');
+      poly.setAttribute('stroke', '#0f766e');
+      poly.setAttribute('stroke-width', '2');
+      poly.removeAttribute('stroke-dasharray');
+    } else {
+      poly.setAttribute('fill', hsl(b, 28, 72, 0.7));
+      poly.setAttribute('stroke', hsl(b, 30, 40, 0.9));
+      poly.setAttribute('stroke-width', '1');
+      poly.removeAttribute('stroke-dasharray');
+    }
+  }
+
+  function mostrarTip(e, p) {
+    const b = asignada[p.id];
+    let html = '<b>Cuadra ' + p.numero + '</b>';
+    html += b === null ? 'Sin barrio' : nombreDe[b];
+    if (actual !== null && b !== actual) html += '<br><em>Clic para ' + (b === null ? 'sumarla a ' : 'mover a ') + nombreDe[actual] + '</em>';
+    else if (actual !== null) html += '<br><em>Clic para quitarla</em>';
+    tip.innerHTML = html;
+    const r = frame.getBoundingClientRect();
+    tip.style.left = (e.clientX - r.left) + 'px';
+    tip.style.top = (e.clientY - r.top) + 'px';
+    tip.style.display = 'block';
+  }
+
+  function alternar(p) {
+    if (actual === null) return;
+    asignada[p.id] = asignada[p.id] === actual ? null : actual;
+    refrescar();
+  }
+
+  /* ---------- Lista ---------- */
+  function dibujarLista() {
+    const q = $('buscar').value.trim().toLowerCase();
+    const ul = $('lista');
+    ul.innerHTML = '';
+    const visibles = barrios.filter(b => b.nombre.toLowerCase().includes(q));
+    if (!visibles.length) {
+      const li = document.createElement('li');
+      li.className = 'bempty';
+      li.textContent = barrios.length ? 'Ningún barrio coincide con la búsqueda.' : 'Todavía no hay barrios. Agregue el primero arriba.';
+      ul.appendChild(li);
+      return;
+    }
+    visibles.forEach(b => {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bitem';
+      btn.setAttribute('aria-current', b.id === actual ? 'true' : 'false');
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = b.id === actual ? '#0d9488' : hsl(b.id, 40, 62, 1);
+      const nm = document.createElement('span');
+      nm.className = 'bname'; nm.textContent = b.nombre;
+      const c = cuenta(b.id);
+      const ct = document.createElement('span');
+      ct.className = 'bcount' + (c === 0 ? ' cero' : '');
+      ct.textContent = c === 0 ? 'sin manzanas' : plural(c, 'manzana', 'manzanas');
+      btn.append(sw, nm, ct);
+      btn.addEventListener('click', () => elegir(b.id));
+      li.appendChild(btn); ul.appendChild(li);
+    });
+  }
+
+  function elegir(id) {
+    if (id === actual) return;
+    if (sucio() && !confirm('Tiene cambios sin guardar en ' + nombreDe[actual] + '. ¿Descartarlos?')) return;
+    parcelas.forEach(p => { asignada[p.id] = original[p.id]; });
+    actual = id;
+    refrescar();
+  }
+
+  /* ---------- Barra superior ---------- */
+  function dibujarBarra() {
+    const hay = actual !== null;
+    $('t-name').textContent = hay ? nombreDe[actual] : 'Sin barrio seleccionado';
+    $('t-swatch').style.background = hay ? '#0d9488' : 'transparent';
+    $('btn-borrar').hidden = !hay;
+    $('hint').style.visibility = hay ? 'visible' : 'hidden';
+    const s = sucio();
+    $('btn-guardar').disabled = !s;
+    $('btn-descartar').hidden = !s;
+    const meta = $('t-meta');
+    if (!hay) { meta.textContent = 'Cree un barrio para empezar.'; return; }
+    const c = cuenta(actual);
+    meta.innerHTML = '';
+    meta.append(plural(c, 'manzana', 'manzanas') + ' en este barrio');
+    if (s) { const d = document.createElement('span'); d.className = 'dirty'; d.textContent = ' · Cambios sin guardar'; meta.append(d); }
+  }
+
+  function dibujarPie() {
+    const n = parcelas.filter(p => asignada[p.id] === null).length;
+    $('sin-barrio-foot').innerHTML = n
+      ? '<strong>' + n + '</strong> de ' + parcelas.length + ' manzanas todavía sin barrio'
+      : 'Todas las manzanas tienen barrio.';
+    $('total-barrios').textContent = plural(barrios.length, 'barrio', 'barrios');
+  }
+
+  function refrescar() {
+    parcelas.forEach(pintar);
+    dibujarLista(); dibujarBarra(); dibujarPie();
+    frame.parentElement.classList.toggle('nav-off', actual === null);
+  }
+
+  /* ---------- Acciones ---------- */
+  $('buscar').addEventListener('input', dibujarLista);
+
+  $('btn-descartar').addEventListener('click', () => {
+    parcelas.forEach(p => { asignada[p.id] = original[p.id]; });
+    refrescar();
+  });
+
+  $('btn-guardar').addEventListener('click', () => {
+    const f = $('form-guardar');
+    f.action = urlDe(URL_EDITAR, actual);
+    parcelas.filter(p => asignada[p.id] === actual).forEach(p => {
+      const i = document.createElement('input');
+      i.type = 'hidden'; i.name = 'parcelas'; i.value = p.id;
+      f.appendChild(i);
+    });
+    sucioGuardado = true;
+    f.submit();
+  });
+
+  $('btn-borrar').addEventListener('click', () => {
+    const c = parcelas.filter(p => original[p.id] === actual).length;
+    const msg = '¿Eliminar el barrio ' + nombreDe[actual] + '?' + (c ? ' Sus ' + plural(c, 'manzana', 'manzanas') + ' quedarán sin barrio.' : '');
+    if (!confirm(msg)) return;
+    const f = $('form-borrar');
+    f.action = urlDe(URL_BORRAR, actual);
+    sucioGuardado = true;
+    f.submit();
+  });
+
+  let sucioGuardado = false;
+  window.addEventListener('beforeunload', e => { if (sucio() && !sucioGuardado) { e.preventDefault(); e.returnValue = ''; } });
+
+  document.querySelectorAll('.toast').forEach(t => {
+    setTimeout(() => t.classList.add('out'), 4500);
+    setTimeout(() => t.remove(), 5000);
+  });
+
+  refrescar();
+})();
+</script>
 {% endblock %}

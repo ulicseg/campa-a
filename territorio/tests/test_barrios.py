@@ -29,7 +29,7 @@ class BarriosTest(TestCase):
     def test_crear_barrio(self):
         resp = self.client.post("/territorio/barrios/", {"nombre": "Prueba"})
         barrio = Barrio.objects.get(nombre="Prueba")
-        self.assertRedirects(resp, f"/territorio/barrios/{barrio.pk}/")
+        self.assertRedirects(resp, f"/territorio/barrios/?barrio={barrio.pk}")
 
     def test_nombre_duplicado_no_se_crea(self):
         Barrio.objects.create(nombre="Prueba")
@@ -37,12 +37,25 @@ class BarriosTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(Barrio.objects.filter(nombre="Prueba").count(), 1)
 
-    def test_editar_muestra_barrio_de_otra_manzana(self):
+    def test_lista_incluye_datos_del_mapa(self):
         norte = Barrio.objects.create(nombre="Prueba Norte")
-        sur = Barrio.objects.create(nombre="Prueba Sur")
         Parcela.objects.filter(pk=self.p1.pk).update(barrio=norte)
-        resp = self.client.get(f"/territorio/barrios/{sur.pk}/")
-        self.assertContains(resp, "hoy en Prueba Norte")
+        resp = self.client.get(f"/territorio/barrios/?barrio={norte.pk}")
+        datos = resp.context["datos"]
+        self.assertEqual(datos["seleccionado"], norte.pk)
+        p1 = next(p for p in datos["parcelas"] if p["id"] == self.p1.pk)
+        self.assertEqual(p1["barrio"], norte.pk)
+        self.assertEqual(len(datos["parcelas"]), 3)
+
+    def test_barrio_invalido_en_url_selecciona_el_primero(self):
+        resp = self.client.get("/territorio/barrios/?barrio=999999")
+        primero = Barrio.objects.first()
+        self.assertEqual(resp.context["datos"]["seleccionado"], primero.pk)
+
+    def test_get_editar_redirige_a_la_lista(self):
+        barrio = Barrio.objects.create(nombre="Prueba")
+        resp = self.client.get(f"/territorio/barrios/{barrio.pk}/")
+        self.assertRedirects(resp, f"/territorio/barrios/?barrio={barrio.pk}")
 
     def test_asignar_manzanas(self):
         barrio = Barrio.objects.create(nombre="Prueba")
