@@ -36,6 +36,23 @@
 
     svg polygon { mix-blend-mode: multiply; transition: fill-opacity 0.15s ease, stroke 0.15s ease; stroke: rgba(15,27,45,0.35); stroke-width: 0.6px; }
     svg polygon:hover { stroke: var(--accent); stroke-width: 2px; fill-opacity: 0.85 !important; }
+    svg polygon.dim { fill-opacity: 0.08 !important; stroke: rgba(15,27,45,0.12); }
+    svg polygon.en-barrio { stroke: var(--accent-dark); stroke-width: 1.6px; }
+    svg .barrio-label { font: 700 15px system-ui, sans-serif; fill: var(--primary); paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; text-anchor: middle; dominant-baseline: middle; }
+    svg .barrio-label.oculto { display: none; }
+    .map-head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.45rem; }
+    .map-head .section-title { margin-bottom: 0; }
+    .map-head select { font-size: 0.82rem; padding: 0.25rem 0.5rem; border: 1px solid var(--gray-300); border-radius: 6px; background: #fff; max-width: 220px; }
+
+    .b-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.7rem; }
+    .b-stat { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 6px; padding: 0.4rem; text-align: center; }
+    .b-stat b { display: block; font-size: 1.1rem; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .b-stat span { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-500); font-weight: 600; }
+    .b-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--gray-100); margin-bottom: 0.7rem; }
+    #detalle tr.fila-manzana { cursor: pointer; }
+    #detalle tr.fila-manzana:hover td { background: var(--primary-light); }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 0.3rem; border: 1px solid rgba(0,0,0,0.15); }
+
     svg polygon.selected { stroke: var(--accent-dark); stroke-width: 3px; fill-opacity: 0.92 !important; }
 
     .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--gray-200); font-size: 0.75rem; color: var(--gray-600); flex-shrink: 0; }
@@ -101,7 +118,15 @@
   <div class="dash-body">
     <!-- Map -->
     <div class="card map-card">
-      <h2 class="section-title">Mapa territorial</h2>
+      <div class="map-head">
+        <h2 class="section-title">Mapa territorial</h2>
+        {% if barrios %}
+        <select id="sel-barrio" aria-label="Filtrar por barrio">
+          <option value="">Todos los barrios</option>
+          {% for b in barrios %}<option value="{{ b.id }}">{{ b.nombre }}</option>{% endfor %}
+        </select>
+        {% endif %}
+      </div>
       <div class="map-stage">
         <div class="map-frame">
           <img src="{% static 'img/mapa_unidas.jpeg' %}" alt="Mapa de Colonias Unidas">
@@ -109,12 +134,16 @@
             {% for item in parcelas_resumen %}
             <polygon points="{{ item.parcela.svg_points }}"
               data-numero="{{ item.parcela.numero }}"
+              data-barrio="{{ item.parcela.barrio_id|default:'' }}"
               fill="{% if item.resumen.color %}{{ item.resumen.color }}{% else %}transparent{% endif %}"
               fill-opacity="{% if item.resumen.color %}{{ item.resumen.opacidad }}{% else %}0{% endif %}"
               style="cursor:pointer">
-              <title>Cuadra {{ item.parcela.numero }} — {{ item.resumen.total }} encuesta{{ item.resumen.total|pluralize }}{% if item.resumen.mayoria %} · mayoría {{ item.resumen.mayoria }}{% endif %}</title>
+              <title>Cuadra {{ item.parcela.numero }}{% if item.parcela.barrio %} · {{ item.parcela.barrio.nombre }}{% endif %} — {{ item.resumen.total }} encuesta{{ item.resumen.total|pluralize }}{% if item.resumen.mayoria %} · mayoría {{ item.resumen.mayoria }}{% endif %}</title>
             </polygon>
             {% endfor %}
+            {% for b in barrios %}{% if b.centro %}
+            <text class="barrio-label" data-barrio="{{ b.id }}" x="{{ b.centro.0 }}" y="{{ b.centro.1 }}">{{ b.nombre }}</text>
+            {% endif %}{% endfor %}
           </svg>
         </div>
       </div>
@@ -130,7 +159,7 @@
     <!-- Side column: chart + detail -->
     <div class="dash-side">
       <div class="card chart-card">
-        <h2 class="section-title">Distribución de intención</h2>
+        <h2 class="section-title" id="chart-title">Distribución de intención</h2>
         <div class="chart-body">
           <div class="chart-canvas-wrap"><canvas id="chart-distribucion"></canvas></div>
           <div id="dist-legend"></div>
@@ -138,7 +167,7 @@
       </div>
 
       <div class="card detail-card" id="detalle-card">
-        <h2 class="section-title">Detalle nominal por cuadra</h2>
+        <h2 class="section-title" id="detalle-title">Detalle nominal por cuadra</h2>
         <div id="detalle">
           <div class="placeholder">
             <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -182,6 +211,7 @@
 {{ advertencia_aceptada|json_script:"advertencia-aceptada" }}
 
 {{ kpis.distribucion|json_script:"dist-data" }}
+{{ barrios|json_script:"barrios-data" }}
 
 <script>
   const distData = JSON.parse(document.getElementById('dist-data').textContent);
@@ -191,16 +221,19 @@
   const bgColors = labels.map(l => chartColores[l] || '#94a3b8');
   const totalVotes = dataValues.reduce((a, b) => a + b, 0);
 
-  new Chart(document.getElementById('chart-distribucion').getContext('2d'), {
+  const chart = new Chart(document.getElementById('chart-distribucion').getContext('2d'), {
     type: 'doughnut',
     data: { labels, datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 1.5, borderColor: '#ffffff' }] },
     options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, cutout: '62%' }
   });
 
   const distLegend = document.getElementById('dist-legend');
+  function pintarLeyenda(values) {
+  const total = values.reduce((a, b) => a + b, 0);
+  distLegend.innerHTML = '';
   labels.forEach((label, i) => {
-    const n = dataValues[i];
-    const pct = totalVotes ? Math.round((n / totalVotes) * 100) : 0;
+    const n = values[i];
+    const pct = total ? Math.round((n / total) * 100) : 0;
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:0.4rem';
     row.innerHTML = `
@@ -210,6 +243,15 @@
       <span style="color:var(--gray-500);font-variant-numeric:tabular-nums;width:34px;text-align:right">${pct}%</span>`;
     distLegend.appendChild(row);
   });
+  }
+  pintarLeyenda(dataValues);
+
+  function mostrarDistribucion(values, titulo) {
+    chart.data.datasets[0].data = values;
+    chart.update();
+    pintarLeyenda(values);
+    document.getElementById('chart-title').textContent = titulo;
+  }
 
   // ---- Sensitive-data access: legal warning gate (Ley 25.326) ----
   const csrftoken = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
@@ -218,13 +260,22 @@
   const modal = document.getElementById('legal-modal');
   const box = document.getElementById('detalle');
   let selected = null;     // currently highlighted polygon
-  let pendingNum = null;   // cuadra awaiting confirmation
+  let pendingAction = null; // acción nominal que espera la aceptación
 
   async function loadDetalle(num) {
     box.innerHTML = '<div class="placeholder"><span style="color:var(--gray-500);font-size:0.85rem">Cargando cuadra ' + num + '…</span></div>';
     try {
       const r = await fetch(`/dashboard/parcela/${num}/detalle/`);
       box.innerHTML = r.ok ? await r.text() : '<div class="placeholder"><p style="color:var(--danger)">No se pudo cargar el detalle.</p></div>';
+      if (r.ok && selBarrio && selBarrio.value) {
+        const volver = document.createElement('button');
+        volver.type = 'button';
+        volver.className = 'btn btn-secondary';
+        volver.style.cssText = 'padding:0.25rem 0.6rem;font-size:0.75rem;margin-bottom:0.5rem';
+        volver.textContent = '← Volver al barrio';
+        volver.addEventListener('click', () => seleccionarBarrio(selBarrio.value));
+        box.prepend(volver);
+      }
     } catch (err) {
       box.innerHTML = '<div class="placeholder"><p style="color:var(--danger)">Error de conexión.</p></div>';
     }
@@ -236,7 +287,7 @@
   document.getElementById('legal-cancel').addEventListener('click', () => {
     closeModal();
     if (selected) { selected.classList.remove('selected'); selected = null; }
-    pendingNum = null;
+    pendingAction = null;
   });
 
   document.getElementById('legal-accept').addEventListener('click', async () => {
@@ -245,7 +296,7 @@
     } catch (err) { /* el enforcement del backend igual protege el detalle */ }
     aceptada = true;            // no volver a mostrar el modal en esta sesión
     closeModal();
-    if (pendingNum !== null) { loadDetalle(pendingNum); pendingNum = null; }
+    if (pendingAction) { const a = pendingAction; pendingAction = null; a(); }
   });
 
   modal.addEventListener('click', (e) => { if (e.target === modal) document.getElementById('legal-cancel').click(); });
@@ -256,15 +307,84 @@
       if (selected) selected.classList.remove('selected');
       el.classList.add('selected');
       selected = el;
-      const num = el.dataset.numero;
-      if (aceptada) {
-        loadDetalle(num);       // ya aceptó: acceso directo y fluido
-      } else {
-        pendingNum = num;
-        openModal();            // primera vez en la sesión: exigir aceptación
-      }
+      conAdvertencia(() => loadDetalle(el.dataset.numero));
     });
   });
+
+  // Todo acceso nominal pasa por la advertencia (una vez por sesión).
+  function conAdvertencia(accion) {
+    if (aceptada) { accion(); return; }   // ya aceptó: acceso directo y fluido
+    pendingAction = accion;
+    openModal();                          // primera vez en la sesión: exigir aceptación
+  }
+
+  // ---- Barrios: filtro del mapa + resumen agregado (no nominal) ----
+  const barrios = JSON.parse(document.getElementById('barrios-data').textContent);
+  const selBarrio = document.getElementById('sel-barrio');
+  const detalleTitle = document.getElementById('detalle-title');
+  const placeholderInicial = box.innerHTML;
+  const esc = (t) => String(t).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
+  function renderBarrio(b) {
+    const d = b.distribucion;
+    const barra = b.total ? labels.map((l, i) => d[l] ? `<span title="${l}: ${d[l]}" style="width:${d[l] / b.total * 100}%;background:${bgColors[i]}"></span>` : '').join('') : '';
+    const filas = b.manzanas.map(m => `
+      <tr class="fila-manzana" data-numero="${m.numero}">
+        <td class="num" style="font-weight:600">${m.numero}</td>
+        <td class="num">${m.total}</td>
+        <td>${m.mayoria ? `<span class="dot" style="background:${m.color}"></span>${m.mayoria}` : '<span style="color:var(--gray-500)">—</span>'}</td>
+        <td class="num">${m.total ? m.porcentaje + '%' : '—'}</td>
+      </tr>`).join('');
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:0.6rem">
+        <h3 style="font-size:0.92rem;font-weight:700;color:var(--primary)">Barrio ${esc(b.nombre)}</h3>
+        ${b.manzanas.length ? `<a href="/dashboard/barrio/${b.id}/pdf/" id="pdf-barrio" class="btn btn-secondary" style="padding:0.3rem 0.7rem;font-size:0.78rem">Imprimir PDF</a>` : ''}
+      </div>
+      <div class="b-stats">
+        <div class="b-stat"><b>${b.total}</b><span>Encuestas</span></div>
+        <div class="b-stat"><b>${b.personas}</b><span>Personas</span></div>
+        <div class="b-stat"><b>${b.relevadas}<small style="font-size:0.75rem;color:var(--gray-500)"> / ${b.manzanas.length}</small></b><span>Cuadras relevadas</span></div>
+      </div>
+      ${b.total ? `<p style="font-size:0.82rem;margin-bottom:0.4rem">Mayoría: <span class="dot" style="background:${b.color}"></span><strong>${b.mayoria}</strong> (${b.porcentaje}%)</p><div class="b-bar">${barra}</div>` : ''}
+      ${b.manzanas.length ? `
+      <div class="table-container"><table>
+        <thead><tr><th>Cuadra</th><th>Encuestas</th><th>Mayoría</th><th>Dominancia</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table></div>
+      <p style="font-size:0.75rem;color:var(--gray-500);margin-top:0.4rem">Clic en una cuadra (de la tabla o del mapa) para ver su detalle nominal.</p>`
+      : '<p style="font-size:0.85rem;color:var(--gray-500);padding:1rem 0">Este barrio todavía no tiene cuadras asignadas.</p>'}`;
+
+    box.querySelectorAll('tr.fila-manzana').forEach(tr => tr.addEventListener('click', () => {
+      const poly = document.querySelector(`polygon[data-numero="${tr.dataset.numero}"]`);
+      if (poly) poly.dispatchEvent(new Event('click'));
+    }));
+    const pdf = document.getElementById('pdf-barrio');
+    if (pdf) pdf.addEventListener('click', (e) => {
+      e.preventDefault();
+      conAdvertencia(() => window.open(pdf.href, '_blank', 'noopener'));
+    });
+  }
+
+  function seleccionarBarrio(id) {
+    const b = barrios.find(x => String(x.id) === id);
+    document.querySelectorAll('polygon[data-numero]').forEach(p => {
+      p.classList.toggle('dim', !!b && p.dataset.barrio !== id);
+      p.classList.toggle('en-barrio', !!b && p.dataset.barrio === id);
+    });
+    document.querySelectorAll('.barrio-label').forEach(t => t.classList.toggle('oculto', !!b && t.dataset.barrio !== id));
+    if (selected) { selected.classList.remove('selected'); selected = null; }
+    if (b) {
+      detalleTitle.textContent = 'Detalle por barrio';
+      mostrarDistribucion(labels.map(l => b.distribucion[l]), `Distribución — ${b.nombre}`);
+      renderBarrio(b);
+    } else {
+      detalleTitle.textContent = 'Detalle nominal por cuadra';
+      mostrarDistribucion(dataValues, 'Distribución de intención');
+      box.innerHTML = placeholderInicial;
+    }
+  }
+
+  if (selBarrio) selBarrio.addEventListener('change', () => seleccionarBarrio(selBarrio.value));
   ajustarMapa(document.querySelector('.map-stage'), document.querySelector('.map-frame'), document.querySelector('.dash-body'), 445);
 </script>
 {% endblock %}

@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views import View
 from usuarios.mixins import JefeRequiredMixin
 from territorio.models import Barrio, Parcela
-from dashboard.aggregation import resumen_parcela, COLORES
+from dashboard.aggregation import resumen_barrio, resumen_parcela, COLORES
 from dashboard.kpis import calcular_kpis
 from dashboard.pdf import generar_pdf
 from encuestas.models import Familia
@@ -17,13 +17,47 @@ auditoria = logging.getLogger("auditoria")
 ADVERTENCIA_SESSION_KEY = "advertencia_datos_aceptada"
 
 
+def _centro(parcelas):
+    """Promedio de los vértices de las manzanas: dónde va la etiqueta del barrio."""
+    xs, ys = [], []
+    for p in parcelas:
+        nums = [float(n) for n in p.coords.split(",") if n.strip()]
+        xs += nums[0::2]
+        ys += nums[1::2]
+    if not xs:
+        return None
+    return [round(sum(xs) / len(xs)), round(sum(ys) / len(ys))]
+
+
+def _barrios_resumen(datos):
+    """Resumen agregado por barrio (sin datos nominales) para el mapa y el panel."""
+    por_barrio = {}
+    for item in datos:
+        if item["parcela"].barrio_id:
+            por_barrio.setdefault(item["parcela"].barrio_id, []).append(item)
+    barrios = []
+    for b in Barrio.objects.all():
+        items = por_barrio.get(b.pk, [])
+        r = resumen_barrio(b)
+        r.update({
+            "id": b.pk,
+            "nombre": b.nombre,
+            "centro": _centro([i["parcela"] for i in items]),
+            "manzanas": [i["resumen"] for i in items],
+            "relevadas": sum(1 for i in items if i["resumen"]["total"]),
+        })
+        barrios.append(r)
+    return barrios
+
+
 class Dashboard(JefeRequiredMixin, View):
     def get(self, request):
         datos = [{"parcela": p, "resumen": resumen_parcela(p)}
-                 for p in Parcela.objects.all()]
+                 for p in Parcela.objects.select_related("barrio")]
         kpis = calcular_kpis()
         return render(request, "dashboard/dashboard.html", {
             "parcelas_resumen": datos,
+            "barrios": _barrios_resumen(datos),
             "colores": COLORES,
             "kpis": kpis,
             "advertencia_aceptada": bool(request.session.get(ADVERTENCIA_SESSION_KEY)),
